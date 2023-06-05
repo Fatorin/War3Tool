@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Fate Another 註冊用戶</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+        integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">管理工具</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="切換導覽列">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="signup">註冊會員</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="upload">上傳地圖</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Fate Another 註冊用戶</h1>
+        <div class="row">
+            <div class="col-3">
+                <form id="signform" action="">
+                    <div class="form-group">
+                        <label for="username">用戶名稱:</label>
+                        <input type="text" class="form-control" id="username" required
+                            aria-describedby="usernameHelpBlock" pattern="^[\w\[\]\-]+$">
+                        <small id="usernameHelpBlock" class="text-muted">特殊字元僅接受 -_[] </small>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="admin">
+                        <label class="form-check-label" for="admin">是否為管理員</label>
+                    </div>
+                    <div class="form-group">
+                        <label for="valid">驗證碼:</label>
+                        <input type="text" class="form-control" id="valid" required aria-describedby="validHelpBlock"
+                            pattern="^[\w]+$">
+                        <small id="validHelpBlock" class="text-muted">請輸入對應的驗證碼 </small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">註冊</button>
+                    <button id="lastbtn" type="button" class="btn btn-info">顯示上次結果</button>
+                </form>
+            </div>
+            <div class="col-9">
+                <div aria-live="polite" aria-atomic="true" style="position: relative; min-height: 200px; display:flex">
+                    <div class="toast" id="toast" style="position: absolute; top: 0; right: 0; min-width:400px;">
+                        <div class="toast-header">
+                            <strong class="mr-auto">註冊通知</strong>
+                            <small class="text-muted">Now</small>
+                            <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="toast-body">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
+    integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+    crossorigin="anonymous"></script>
+<script>
+    var msg = "無上次註冊紀錄";
+    $("#lastbtn").on("click", function () {
+        showMsg(msg);
+    });
+
+    $("#signform").submit("submit", function (e) {
+        e.preventDefault();
+        $.ajax({
+            method: "POST", //傳送方式
+            url: "Register", //傳送目的地
+            dataType: "json", //資料格式,
+            contentType: "application/json",
+            data: JSON.stringify({
+                username: $("#username").val(),
+                valid: $("#valid").val(),
+                is_admin: $("#admin").is(":checked")
+            }),
+            success: function (result) {
+                msg = '<font color="#007500">ID「<font color="#0000ff">' + result.username + '</font>」, <br>' +
+                    '<font color="#007500">密碼「<font color="#0000ff">' + result.password + '</font>」, <br>' +
+                    '<font color="#007500">請至戰網任意頻道輸入「/chpass 新密碼」來修改密碼<font color="#0000ff">';
+                $("#signform")[0].reset(); //重設 ID 為 demo 的 form (表單)
+                showMsg(msg);
+            },
+            error: function (result) {
+                console.log(result.responseJSON.msg);
+                msg = result.responseJSON.msg;
+                showMsg(msg);
+            }
+        })
+    })
+
+    function showMsg(string) {
+        $(".toast-body").html(string);
+        $("#toast").toast({
+            delay: 10000,
+        });
+        $("#toast").toast("show");
+    }
+</script>

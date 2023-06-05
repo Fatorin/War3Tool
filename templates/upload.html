@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>地圖清單</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+    integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">管理工具</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+      aria-controls="navbarNav" aria-expanded="false" aria-label="切換導覽列">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="signup">註冊會員</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="upload">上傳地圖</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="row">
+      <div class="col-xs-12 col-md-12">
+        <h2>檔案上傳</h2>
+        <div class="progress">
+          <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+          </div>
+        </div>
+        <form>
+          <div class="form-group">
+            <div class="custom-file">
+              <input type="file" class="custom-file-input" id="fileInput">
+              <label class="custom-file-label" for="fileInput">選擇檔案</label>
+            </div>
+            <div id="fileDetails" class="mt-2"></div>
+            <button type="button" class="btn btn-primary mt-2" id="uploadBtn">上傳</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="col-xs-12 col-md-12 mt-4">
+        <h2>地圖清單</h2>
+        <div id="loading" class="text-center">
+          <h4>讀取中...</h4>
+        </div>
+        <div id="noData" class="text-center" style="display: none;">
+          <h4>無資料</h4>
+        </div>
+      </div>
+      <div class="col-xs-12 col-md-12">
+        <table id="dataTable" class="table table-striped table-bordered" style="display: none;">
+          <thead class="thead-dark">
+            <tr>
+              <th class="w-25" scope="col">檔名</th>
+              <th scope="col">圖名</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+</body>
+<script>
+  var decoder = new TextDecoder("utf-8");
+  var loading = $('#loading');
+  var noData = $('#noData');
+  var dataTable = $('#dataTable');
+  $(document).ready(function () {
+    fetchList();
+  });
+
+  $('#fileInput').change(function () {
+    var fileInput = $(this)[0];
+    var file = fileInput.files[0];
+
+    var fileSize = file.size;
+    var fileSizeStr = formatFileSize(fileSize);
+
+    var reader = new FileReader();
+    reader.onloadend = function () {
+      var fileContent = reader.result.slice(8, 128);
+      var mapName = processMapName(fileContent);
+      $('#fileDetails').html("檔案大小：" + fileSizeStr + "，地圖名稱：" + mapName);
+    };
+    reader.readAsArrayBuffer(file);
+
+    var fileName = $(this).val().split("\\").pop();
+    $(".custom-file-input").siblings(".custom-file-label").addClass("selected").html(fileName);
+  });
+
+  $('#uploadBtn').click(function () {
+    var fileInput = $('#fileInput')[0];
+    var file = fileInput.files[0];
+    var formData = new FormData();
+    formData.append('file', file);
+
+    $.ajax({
+      method: 'POST',
+      url: 'UploadFile', // 替換為實際的上傳處理程式的URL
+      data: formData,
+      processData: false,
+      contentType: false,
+      xhr: function () {
+        var xhr = new window.XMLHttpRequest();
+        xhr.upload.addEventListener('progress', function (evt) {
+          if (evt.lengthComputable) {
+            var percentComplete = (evt.loaded / evt.total) * 100;
+            $('.progress-bar').width(percentComplete + '%');
+            $('.progress-bar').html(percentComplete.toFixed(2) + '%');
+          }
+        }, false);
+        return xhr;
+      },
+      success: function (response) {
+        alert("上傳成功。" + response.msg);
+        $('#fileInput').val('');
+        $('#fileDetails').empty();
+        $('.progress-bar').width('0%');
+        $('.progress-bar').html('');
+        fetchList();
+      },
+      error: function (response) {
+        alert(response.responseJSON.msg);
+        $('#fileInput').val('');
+        $('#fileDetails').empty();
+        $('.progress-bar').width('0%');
+        $('.progress-bar').html('');
+      }
+    });
+  });
+
+  function fetchList() {
+    loading.show();
+    noData.hide();
+    dataTable.hide();
+
+    $.ajax({
+      method: 'GET',
+      url: 'GetFiles', // 替換為實際的API路徑
+      dataType: 'json',
+      contentType: "application/json",
+      success: function (response) {
+        loading.hide();
+
+        if (response && response.files) {
+          var files = response.files;
+          var tableBody = $('#tableBody');
+          tableBody.empty();
+
+          if ($.isEmptyObject(files)) {
+            noData.show();
+            dataTable.hide();
+          } else {
+            $.each(files, function (key, value) {
+              var row = $('<tr></tr>');
+              row.append('<td>' + key + '</td>');
+              row.append('<td>' + value + '</td>');
+              tableBody.append(row);
+            });
+
+            noData.hide();
+            dataTable.show();
+          }
+        } else {
+          noData.show();
+          dataTable.hide();
+        }
+      },
+      error: function () {
+        loading.hide();
+        noData.show();
+        dataTable.hide();
+      }
+    });
+  }
+
+  function formatFileSize(fileSize) {
+    if (fileSize === 0) return '0 Bytes';
+    var k = 1024,
+      sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'],
+      i = Math.floor(Math.log(fileSize) / Math.log(k));
+    return parseFloat((fileSize / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  function processMapName(buffer) {
+    var uint8View = new Uint8Array(buffer);
+    let mapName = "";
+    let emptyByte = 0x00;
+    let pos = uint8View.indexOf(emptyByte);
+    mapName = decoder.decode(uint8View.slice(0, pos));
+    mapName = mapName.replace(/\|r/g, "");
+
+    // 處理多餘的 |c
+    while (true) {
+      pos = mapName.indexOf("|c");
+      if (pos === -1) {
+        break;
+      }
+      mapName = mapName.replace(mapName.substring(pos, pos + 10), "");
+    }
+
+    return mapName;
+  }
+</script>
+
+</html>

@@ -1,0 +1,5 @@
+"BNET\\auth\\admin"="true"
+"BNET\\auth\\command_groups"="255"
+"BNET\\acct\\userid"="{{userid}}"
+"BNET\\acct\\username"="{{username}}"
+"BNET\\acct\\passhash1"="{{passhash1}}"
