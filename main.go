@@ -270,7 +270,7 @@ func UploadSingleFile(ctx *gin.Context) {
 		return
 	}
 
-	savePath := fmt.Sprintf("./Maps/%s", file.Filename)
+	savePath := filepath.Join(mapsFolderPath, file.Filename)
 
 	err = ctx.SaveUploadedFile(file, savePath)
 	if err != nil {
@@ -280,7 +280,7 @@ func UploadSingleFile(ctx *gin.Context) {
 		return
 	}
 
-	realName, err := AnalysisW3x("./Maps/" + file.Filename)
+	realName, err := AnalysisW3x(savePath)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"msg": fmt.Sprintln("解析錯誤，原因：", err.Error()),
@@ -288,7 +288,6 @@ func UploadSingleFile(ctx *gin.Context) {
 		return
 	}
 
-	fmt.Printf("Get new maps. %s \n", realName)
 	mapsNameDict[file.Filename] = realName
 
 	ctx.JSON(http.StatusOK, gin.H{
@@ -297,7 +296,6 @@ func UploadSingleFile(ctx *gin.Context) {
 }
 
 func CheckFileStatus(filename string, mimeType string) error {
-
 	//檔名不可空白
 	for _, text := range filename {
 		if unicode.IsSpace(text) {
