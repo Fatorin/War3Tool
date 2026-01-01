@@ -1,4 +1,4 @@
-package pvpgnhash
+package crypto
 
 import (
 	"encoding/binary"
